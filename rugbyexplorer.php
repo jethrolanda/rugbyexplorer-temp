@@ -93,8 +93,10 @@ function player_lineup($atts)
   );
   $data = getPlayerLineUpData($args);
 
+  if (!empty($data['allMatchStatsSummary'])) {
+    require_once('player-lineup-view.php');
+  }
 
-  require_once('player-lineup-view.php');
 
   // content
   return ob_get_clean();
