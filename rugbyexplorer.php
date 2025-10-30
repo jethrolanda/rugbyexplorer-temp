@@ -2,7 +2,7 @@
 
 /**
  * Plugin Name: RugbyExplorer Temporary
- * Description: RugbyExplorer Temporary
+ * Description: Player lineup and Team ladder shortcode.
  * Version: 1.0
  * Author: Jethrolanda
  * Author URI: jethrolanda.com
@@ -13,6 +13,66 @@
  */
 
 defined('ABSPATH') || exit;
+
+// 1️⃣ Add the meta box Game Fixture ID
+add_action('add_meta_boxes', function () {
+  add_meta_box(
+    'game_fixture_id',            // ID
+    'Fixture ID',                 // Title
+    'render_game_fixture_id',     // Callback
+    'sp_event',                   // Post type slug (change this)
+    'normal',                     // Context ('normal', 'side', 'advanced')
+    'default'                     // Priority
+  );
+});
+
+// 2️⃣ Render the meta box HTML
+function render_game_fixture_id()
+{
+  // Security nonce
+  wp_nonce_field('save_match_details', 'match_details_nonce');
+
+  // Get saved values
+  global $post;
+  $fixture_id = get_post_meta($post->ID, 'fixture_id', true);
+?>
+
+  <p>
+    <label for="fixture_id"><strong>Fixture ID:</strong></label><br>
+    <input
+      type="text"
+      id="fixture_id"
+      name="fixture_id"
+      value="<?php echo esc_attr($fixture_id); ?>"
+      style="width:100%;"
+      placeholder="e.g. bd555ab34f689975d" />
+  </p>
+
+<?php
+}
+
+// 3️⃣ Save the meta box data
+add_action('save_post_sp_event', function ($post_id) {
+
+  // Verify nonce
+  if (
+    !isset($_POST['match_details_nonce']) ||
+    !wp_verify_nonce($_POST['match_details_nonce'], 'save_match_details')
+  ) {
+    return;
+  }
+
+  // Check autosave or permissions
+  if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+  if (!current_user_can('edit_post', $post_id)) return;
+
+
+  // Sanitize & save
+  if (isset($_POST['fixture_id'])) {
+
+    update_post_meta($post_id, 'fixture_id', sanitize_text_field($_POST['fixture_id']));
+  }
+});
 
 add_shortcode('player_lineup', 'player_lineup');
 
@@ -30,13 +90,11 @@ function player_lineup($atts)
   ob_start();
 
   $args = array(
-    'fixtue_code' => get_post_meta(get_the_ID(), 'fixture_code', true)
+    'fixture_id' => get_post_meta(get_the_ID(), 'fixture_id', true)
   );
   $data = getPlayerLineUpData($args);
-  $test = wp_remote_get('https://api.fusesport.com/comps/' . $atts['competition_id'] . '/get/');
-  $body = wp_remote_retrieve_body($test);
-  $fixtures = json_decode($body, true);
-  // error_log(print_r($fixtures, true));
+
+  error_log(print_r($data, true));
   require_once('player-lineup-view.php');
 
   // content
@@ -64,7 +122,7 @@ function getPlayerLineUpData($args = array())
       "comp" => [
         "id" => null,
         "season" => null,
-        "fixture" => $fixture_code,
+        "fixture" => $fixture_id,
         "sourceType" => "2"
       ]
     ],
@@ -292,8 +350,10 @@ function getPlayerLineUpData($args = array())
     error_log('GraphQL Request Error: ' . $response->get_error_message());
   } else {
     $data = json_decode(wp_remote_retrieve_body($response), true);
-    echo '<pre>';
-    print_r($data);
-    echo '</pre>';
+
+    return $data['data'];
+    // echo '<pre>';
+    // print_r($data);
+    // echo '</pre>';
   }
 }
