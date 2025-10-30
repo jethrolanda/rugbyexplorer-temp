@@ -13,7 +13,7 @@ usort($players, function ($a, $b) {
 });
 ?>
 <div class="elementor-widget-heading">
-  <div class="container" style="display:flex; gap: 10px; margin-bottom: 20px;">
+  <div class="container" style="display:flex; gap: 50px; margin-bottom: 20px;">
     <div class="home" style="flex: 1;">
       <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
         <img width="100" height="100" src="<?php echo $data['getFixtureItem']['homeTeam']['crest']; ?>" alt="<?php echo $data['getFixtureItem']['homeTeam']['name']; ?>">
