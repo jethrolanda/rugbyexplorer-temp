@@ -76,7 +76,6 @@ add_action('save_post_sp_event', function ($post_id) {
 
 add_shortcode('player_lineup', 'player_lineup');
 
-
 function player_lineup($atts)
 {
 
@@ -94,7 +93,7 @@ function player_lineup($atts)
   );
   $data = getPlayerLineUpData($args);
 
-  error_log(print_r($data, true));
+
   require_once('player-lineup-view.php');
 
   // content
@@ -352,6 +351,140 @@ function getPlayerLineUpData($args = array())
     $data = json_decode(wp_remote_retrieve_body($response), true);
 
     return $data['data'];
+    // echo '<pre>';
+    // print_r($data);
+    // echo '</pre>';
+  }
+}
+
+/* TEAM LADDER / COMPETITION LADDER */
+// Add field to Add New screen
+add_action('sp_league_add_form_fields', function () {
+?>
+  <div class="form-field">
+    <label for="competition_id">Competition ID</label>
+    <input type="text" name="competition_id" id="competition_id" value="" placeholder="ex: mLGoqgHnacX2AnmgD">
+    <p class="description">You can find this in the xplorer.rugby url parameters ex: comp=mLGoqgHnacX2AnmgD</p>
+  </div>
+<?php
+});
+
+// Add field to Edit screen
+add_action('sp_league_edit_form_fields', function ($term) {
+  $competition_id = get_term_meta($term->term_id, 'competition_id', true);
+?>
+  <tr class="form-field">
+    <th scope="row">
+      <label for="competition_id">Competition ID</label>
+    </th>
+    <td>
+      <input type="text" name="competition_id" id="competition_id" placeholder="ex: mLGoqgHnacX2AnmgD" value="<?php echo esc_attr($competition_id); ?>">
+      <p class="description">You can find this in the xplorer.rugby url parameters ex: comp=mLGoqgHnacX2AnmgD</p>
+    </td>
+  </tr>
+<?php
+});
+
+add_action('created_sp_league', 'save_competition_meta');
+add_action('edited_sp_league', 'save_competition_meta');
+
+function save_competition_meta($term_id)
+{
+  if (isset($_POST['competition_id'])) {
+    update_term_meta($term_id, 'competition_id', sanitize_text_field($_POST['competition_id']));
+  }
+}
+
+add_shortcode('team_ladder', 'team_ladder');
+
+function team_ladder($atts)
+{
+  $atts = shortcode_atts(array(
+    'season_id' => '',
+    'competition_id' => ''
+  ), $atts, 'fusesports_fixtures');
+
+
+  $terms = get_the_terms(get_the_ID(), 'sp_league');
+  if (!empty($terms)) {
+    $competition_id = get_term_meta($terms[0]->term_id, 'competition_id', true);
+  }
+
+
+  ob_start();
+
+  $args = array(
+    'competition_id' => $competition_id
+  );
+  $data = getCompetitionLadderData($args);
+
+  if (!empty($data['ladderPools'])) {
+    require_once('team-ladder-view.php');
+  }
+
+
+  // content
+  return ob_get_clean();
+}
+
+function getCompetitionLadderData($args)
+{
+  extract($args);
+
+  $graphql_url = 'https://rugby-au-cms.graphcdn.app/';
+
+  $body = [
+    "operationName" => "CompLadderQuery",
+    "variables" => [
+      "comp" => [
+        "id" => $competition_id,
+        "sourceType" => "2"
+      ]
+    ],
+    "query" => 'query CompLadderQuery($comp: CompInput) {
+      compLadder(comp: $comp) {
+        id
+        hasPools
+        ladderPools {
+          id
+          poolName
+          teams {
+            id
+            name
+            position
+            totalMatchPoints
+            matchesPlayed
+            matchesWon
+            matchesLost
+            matchesDrawn
+            pointsFor
+            pointsAgainst
+            pointsDifference
+            crest
+            bonusPoints4T
+          }
+        }
+      }
+    }'
+  ];
+
+  $args = [
+    'body' => json_encode($body),
+    'headers' => [
+      'Content-Type' => 'application/json',
+    ],
+    'method' => 'POST',
+    'data_format' => 'body',
+  ];
+
+  $response = wp_remote_post($graphql_url, $args);
+
+  if (is_wp_error($response)) {
+    error_log('GraphQL Request Error: ' . $response->get_error_message());
+  } else {
+    $data = json_decode(wp_remote_retrieve_body($response), true);
+
+    return $data['data']['compLadder'];
     // echo '<pre>';
     // print_r($data);
     // echo '</pre>';
