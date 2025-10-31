@@ -404,8 +404,9 @@ function team_ladder($atts)
   $atts = shortcode_atts(array(
     'season_id' => '',
     'competition_id' => ''
-  ), $atts, 'fusesports_fixtures');
+  ), $atts, 'team_ladder');
 
+  extract($atts);
 
   $terms = get_the_terms(get_the_ID(), 'sp_league');
   if (!empty($terms)) {
