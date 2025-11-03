@@ -27,7 +27,7 @@ foreach ($data['ladderPools'] as $pool) {
       <?php
       foreach ($pool['teams'] as $k => $team) { ?>
         <tr class="css-1408fvk">
-          <td style="text-align: center;"><?php echo $k + 1; ?></td>
+          <td style="text-align: center;"><?php echo $team['position']; ?></td>
           <td style="text-align: center;">
             <div style="display: flex; align-items: center; gap: 15px;">
               <img width="32" height="32" src="<?php echo $team['crest']; ?>" alt="<?php echo $team['name'] ?>">
