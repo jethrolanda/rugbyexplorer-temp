@@ -9,7 +9,7 @@ foreach ($data['ladderPools'] as $pool) {
     echo "<h2>" . $pool['poolName'] . "</h2>";
   }
 ?>
-  <table class="css-ixkv1t">
+  <table class="css-ixkv1t" id="competition-<?php echo $competition_id; ?>">
     <thead>
       <tr>
         <th title="Position" class="css-3l0rbe">Pos</th>

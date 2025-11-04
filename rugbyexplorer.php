@@ -14,6 +14,14 @@
 
 defined('ABSPATH') || exit;
 
+add_action('init', 'register_my_shortcodes');
+add_action('elementor/widgets/widgets_registered', 'register_my_shortcodes');
+
+function register_my_shortcodes()
+{
+  add_shortcode('player_lineup', 'player_lineup');
+  add_shortcode('team_ladder', 'team_ladder');
+}
 // 1️⃣ Add the meta box Game Fixture ID
 add_action('add_meta_boxes', function () {
   add_meta_box(
@@ -74,7 +82,7 @@ add_action('save_post_sp_event', function ($post_id) {
   }
 });
 
-add_shortcode('player_lineup', 'player_lineup');
+// add_shortcode('player_lineup', 'player_lineup');
 
 function player_lineup($atts)
 {
@@ -397,22 +405,24 @@ function save_competition_meta($term_id)
   }
 }
 
-add_shortcode('team_ladder', 'team_ladder');
+// add_shortcode('team_ladder', 'team_ladder');
 
 function team_ladder($atts)
 {
   $atts = shortcode_atts(array(
+    'id' => uniqid(),
     'season_id' => '',
     'competition_id' => ''
   ), $atts, 'team_ladder');
 
-  extract($atts);
+  $competition_id = $atts['competition_id'];
 
-  $terms = get_the_terms(get_the_ID(), 'sp_league');
-  if (!empty($terms)) {
-    $competition_id = get_term_meta($terms[0]->term_id, 'competition_id', true);
+  if (empty($competition_id)) {
+    $terms = get_the_terms(get_the_ID(), 'sp_league');
+    if (!empty($terms)) {
+      $competition_id = get_term_meta($terms[0]->term_id, 'competition_id', true);
+    }
   }
-
 
   ob_start();
 
@@ -422,7 +432,7 @@ function team_ladder($atts)
   $data = getCompetitionLadderData($args);
 
   if (!empty($data['ladderPools'])) {
-    require_once('team-ladder-view.php');
+    require('team-ladder-view.php');
   }
 
 
