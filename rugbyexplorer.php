@@ -22,6 +22,7 @@ function register_my_shortcodes()
   add_shortcode('player_lineup', 'player_lineup');
   add_shortcode('team_ladder', 'team_ladder');
   add_shortcode('team_events', 'team_events');
+  add_shortcode('points_summary', 'points_summary');
 }
 
 // 1️⃣ Add the meta box Game Fixture ID
@@ -656,4 +657,25 @@ function getTeamCompetitionEventsData($args)
     $results = $data['data']['getEntityFixturesAndResults'];
     return $results;
   }
+}
+
+function points_summary($atts)
+{
+  $atts = shortcode_atts(array(
+    'id' => uniqid(),
+  ), $atts, 'points_summary');
+
+  ob_start();
+
+  $args = array(
+    'fixture_id' => get_post_meta(get_the_ID(), 'fixture_id', true)
+  );
+  $data = getPlayerLineUpData($args);
+
+  if (!empty($data)) {
+    require('points-summary-view.php');
+  }
+
+  // content
+  return ob_get_clean();
 }
